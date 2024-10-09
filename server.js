@@ -1,0 +1,169 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const bodyParser = require('body-parser');
+
+
+// Create the app
+const app = express();
+app.use(bodyParser.json()); // to parse JSON request bodies
+
+
+mongoose.connect('mongodb+srv://tomyomo:wgyb29CSsWVM0LWl@glotech.w8vgy.mongodb.net/?retryWrites=true&w=majority&appName=GloTech', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected'))
+.catch((err) => console.error('MongoDB connection error:', err));
+
+// User schema
+const userSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+//   chapters: {
+//     chapter1: { type: String },
+//     chapter2: { type: String },
+//     chapter3: { type: String },
+//     // Add more chapters as needed
+//   },
+});
+
+// Pre-save middleware to hash passwords before storing them
+userSchema.pre('save', async function (next) {
+  try {
+    // Hash the password if it's new or modified
+    if (this.isModified('password')) {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Create User model
+const User = mongoose.model('User', userSchema);
+
+// Routes
+
+// Register a new user
+app.post('/register', async (req, res) => {
+  const { firstName, lastName, username, email, password } = req.body;
+
+  try {
+    const user = new User({
+      firstName,
+      lastName,
+      username,
+      email,
+      password,
+    });
+
+    await user.save();
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ error: 'Username or email already exists' });
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Login user
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find the user by username
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    res.json({ message: 'Login successful' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Fetch user data
+app.get('/user/:username', async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username }).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update chapters
+app.put('/user/:username/chapters', async (req, res) => {
+  const { chapters } = req.body;
+
+  try {
+    const user = await User.findOneAndUpdate(
+      { username: req.params.username },
+      { chapters },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Change Password Route
+app.put('/user/:username/password', async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    // Find the user by username
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if the current password is correct
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Validate new password (you can add more validation rules here)
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    // Update the password
+    user.password = newPassword; // This will be hashed automatically in the pre-save hook
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
