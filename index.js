@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
 // Pre-save middleware to hash passwords before storing them
 userSchema.pre('save', async function (next) {
   try {
-    // Hash the password if it's new or modified
+    // Only hash the password if it has been modified (i.e., during password updates or creation)
     if (this.isModified('password')) {
       const salt = await bcrypt.genSalt(10);
       this.password = await bcrypt.hash(this.password, salt);
@@ -63,8 +63,8 @@ app.post('/register', async (req, res) => {
       username,
       email,
       password,
-      chapters, // Optional
-      image, // Optional
+      // chapters, // Optional
+      // image, // Optional
     });
 
     await user.save();
@@ -101,9 +101,9 @@ app.post('/login', async (req, res) => {
 });
 
 // Fetch user data
-app.get('/user/:username', async (req, res) => {
+app.get('/user/:email', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username }).select('-password');
+    const user = await User.findOne({ email: req.params.email }).select('-password');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -146,22 +146,26 @@ app.put('/user/:username/password', async (req, res) => {
     }
 
     // Check if the current password is correct
+    console.log("Current password in DB:", user.password); // Log the hashed password from DB
     const isMatch = await bcrypt.compare(currentPassword, user.password);
+    console.log("Is password match:", isMatch); // Log the result of the comparison
+
     if (!isMatch) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
-    // Validate new password (you can add more validation rules here)
+    // Validate new password (simple validation)
     if (newPassword.length < 6) {
       return res.status(400).json({ error: 'New password must be at least 6 characters long' });
     }
 
     // Update the password
-    user.password = newPassword; // This will be hashed automatically in the pre-save hook
-    await user.save();
+    user.password = newPassword;
+    await user.save(); // The password will be hashed in the pre('save') hook
 
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
