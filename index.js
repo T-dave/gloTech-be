@@ -101,9 +101,9 @@ app.post('/login', async (req, res) => {
 });
 
 // Fetch user data
-app.get('/user/:email', async (req, res) => {
+app.get('/user/:username', async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.params.email }).select('-password');
+    const user = await User.findOne({ username: req.params.username }).select('-password');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
