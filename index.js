@@ -193,26 +193,100 @@ app.put('/user/:username/image', async (req, res) => {
   }
 });
 
-// Change Audio Route
-app.put('/user/:username/audio', async (req, res) => {
-  const { audio } = req.body;
+// // Change Audio Route
+// app.put('/user/:username/audio', async (req, res) => {
+//   const { audio } = req.body;
+
+//   try {
+//     // Find the user by usernameåå
+//     const user = await User.findOneAndUpdate(
+//       { username: req.params.username },
+//       { audio },
+//       { new: true }
+//     );
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+
+//     res.json({ message: 'Audio updated successfully' });
+//   } catch (err) {
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+// routes/user.js
+
+
+// Add a new audio link for a user
+router.post('/addAudioLink', async (req, res) => {
+  const { username, newAudioLink } = req.body;
 
   try {
-    // Find the user by username
-    const user = await User.findOneAndUpdate(
-      { username: req.params.username },
-      { audio },
-      { new: true }
-    );
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    res.json({ message: 'Audio updated successfully' });
-  } catch (err) {
+
+    // Add the new audio link to the audioLinks array
+    user.audioLinks.push(newAudioLink);
+    await user.save();
+
+    res.json({ message: 'Audio link added successfully', audioLinks: user.audioLinks });
+  } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Update an existing audio link
+router.put('/updateAudioLink', async (req, res) => {
+  const { username, index, updatedAudioLink } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (index < 0 || index >= user.audioLinks.length) {
+      return res.status(400).json({ error: 'Invalid index' });
+    }
+
+    // Update the audio link at the given index
+    user.audioLinks[index] = updatedAudioLink;
+    await user.save();
+
+    res.json({ message: 'Audio link updated successfully', audioLinks: user.audioLinks });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+// Delete an audio link
+router.delete('/deleteAudioLink', async (req, res) => {
+  const { username, index } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (index < 0 || index >= user.audioLinks.length) {
+      return res.status(400).json({ error: 'Invalid index' });
+    }
+
+    // Remove the audio link at the given index
+    user.audioLinks.splice(index, 1); // Remove the link from the array
+    await user.save();
+
+    res.json({ message: 'Audio link deleted successfully', audioLinks: user.audioLinks });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;
