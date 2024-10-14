@@ -25,7 +25,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   chapters: {},
   image: { type: String },
-  audioLinks: {  }
+  audioLinks: {
+    type: [String], // Array of strings to store audio file links
+    default: [],    // Default to an empty array
+  },
 //   chapters: {
 //     chapter1: { type: String },
 //     chapter2: { type: String },
