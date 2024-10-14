@@ -218,7 +218,7 @@ app.put('/user/:username/image', async (req, res) => {
 
 
 // Add a new audio link for a user
-router.post('/addAudioLink', async (req, res) => {
+app.post('/addAudioLink', async (req, res) => {
   const { username, newAudioLink } = req.body;
 
   try {
@@ -238,7 +238,7 @@ router.post('/addAudioLink', async (req, res) => {
 });
 
 // Update an existing audio link
-router.put('/updateAudioLink', async (req, res) => {
+app.put('/updateAudioLink', async (req, res) => {
   const { username, index, updatedAudioLink } = req.body;
 
   try {
@@ -263,7 +263,7 @@ router.put('/updateAudioLink', async (req, res) => {
 
 
 // Delete an audio link
-router.delete('/deleteAudioLink', async (req, res) => {
+app.delete('/deleteAudioLink', async (req, res) => {
   const { username, index } = req.body;
 
   try {
