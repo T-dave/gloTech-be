@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   chapters: {},
   image: { type: String },
+  audio: { type: String },
 //   chapters: {
 //     chapter1: { type: String },
 //     chapter2: { type: String },
@@ -65,6 +66,7 @@ app.post('/register', async (req, res) => {
       password,
       // chapters, // Optional
       // image, // Optional
+      // audio, // Optional
     });
 
     await user.save();
@@ -186,6 +188,27 @@ app.put('/user/:username/image', async (req, res) => {
     }
 
     res.json({ message: 'Image updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Change Audio Route
+app.put('/user/:username/audio', async (req, res) => {
+  const { audio } = req.body;
+
+  try {
+    // Find the user by username
+    const user = await User.findOneAndUpdate(
+      { username: req.params.username },
+      { audio },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'Audio updated successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
