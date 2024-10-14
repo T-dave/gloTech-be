@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   chapters: {},
   image: { type: String },
-  audio: { type: String },
+  audioLinks: {  }
 //   chapters: {
 //     chapter1: { type: String },
 //     chapter2: { type: String },
